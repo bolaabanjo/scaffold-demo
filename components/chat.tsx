@@ -1,6 +1,7 @@
 'use client';
 
 import { useChat } from '@ai-sdk/react';
+import { DefaultChatTransport } from 'ai';
 import { useRef, useEffect, useState } from 'react';
 
 const ArrowUpIcon = () => (
@@ -18,7 +19,7 @@ function getMessageText(message: { parts: Array<{ type: string; text?: string }>
 
 export function Chat() {
     const [input, setInput] = useState('');
-    const { messages, sendMessage, status, error } = useChat({ api: '/api/chat' });
+    const { messages, sendMessage, status, error } = useChat({ transport: new DefaultChatTransport({ api: '/api/chat' }) });
     const scrollRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLTextAreaElement>(null);
     const isLoading = status !== 'ready';
