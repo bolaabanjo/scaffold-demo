@@ -1,20 +1,23 @@
 import { createPublicClient, http, erc20Abi, parseUnits, getAddress } from 'viem';
-import { celoAlfajores } from 'viem/chains';
-import { CUSD_ADDRESS, RECEIVER_WALLET, PRO_MESSAGE_COST } from '@/lib/constants';
+import { celo, celoAlfajores } from 'viem/chains';
+import { CUSD_ADDRESSES, RECEIVER_WALLET, PRO_MESSAGE_COST } from '@/lib/constants';
 
-const publicClient = createPublicClient({
-    chain: celoAlfajores,
-    transport: http(),
-});
+function getPublicClient(chainId: number) {
+    return createPublicClient({
+        chain: chainId === 42220 ? celo : celoAlfajores,
+        transport: http(),
+    });
+}
 
 export async function POST(req: Request) {
     try {
-        const { txHash }: { txHash: string } = await req.json();
+        const { txHash, chainId = 44787 }: { txHash: string; chainId?: number } = await req.json();
 
         if (!txHash || !txHash.startsWith('0x')) {
             return Response.json({ verified: false, error: 'Invalid transaction hash' }, { status: 400 });
         }
 
+        const publicClient = getPublicClient(chainId);
         const receipt = await publicClient.getTransactionReceipt({
             hash: txHash as `0x${string}`,
         });
@@ -25,7 +28,8 @@ export async function POST(req: Request) {
 
         // Check that the tx interacted with the cUSD contract
         const txTo = receipt.to ? getAddress(receipt.to) : null;
-        const expectedContract = getAddress(CUSD_ADDRESS);
+        const cusdAddress = CUSD_ADDRESSES[chainId as keyof typeof CUSD_ADDRESSES] || CUSD_ADDRESSES[44787];
+        const expectedContract = getAddress(cusdAddress);
 
         if (txTo !== expectedContract) {
             return Response.json({ verified: false, error: 'Wrong contract' }, { status: 400 });

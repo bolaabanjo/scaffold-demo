@@ -3,7 +3,7 @@
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
 import { useRef, useEffect, useState, useCallback } from 'react';
-import { useAccount } from 'wagmi';
+import { useAccount, useConnect, useChainId } from 'wagmi';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { TierToggle } from './tier-toggle';
 import { WalletButton } from './wallet-button';
@@ -53,8 +53,26 @@ export function Chat() {
     const isLoading = status !== 'ready';
 
     const { isConnected } = useAccount();
+    const chainId = useChainId();
+    const { connect, connectors } = useConnect();
+    const [isMiniPay, setIsMiniPay] = useState(false);
     const { openConnectModal } = useConnectModal();
     const { pay, txHash, isPending, isConfirming, isSuccess, error: payError, reset: resetPayment } = usePayForProMessage();
+
+    // Detect MiniPay and auto-connect
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const isMp = !!(window.ethereum as any)?.isMiniPay;
+            setIsMiniPay(isMp);
+
+            if (isMp && !isConnected) {
+                const injectedConnector = connectors.find((c) => c.id === 'injected');
+                if (injectedConnector) {
+                    connect({ connector: injectedConnector });
+                }
+            }
+        }
+    }, [connect, connectors, isConnected]);
 
     // Auto-scroll to bottom
     useEffect(() => {
@@ -74,13 +92,13 @@ export function Chat() {
             setPaymentStatus('verifying');
             void sendMessage({
                 text: pendingMessage,
-                metadata: { tier: 'pro', txHash },
+                metadata: { tier: 'pro', txHash, chainId },
             });
             setPendingMessage(null);
             setPaymentStatus('idle');
             resetPayment();
         }
-    }, [isSuccess, txHash, pendingMessage, sendMessage, resetPayment]);
+    }, [isSuccess, txHash, pendingMessage, sendMessage, resetPayment, chainId]);
 
     // Update payment status display
     useEffect(() => {
@@ -150,7 +168,7 @@ export function Chat() {
                     <span className="app-badge">web3</span>
                 </div>
                 <div className="header-right">
-                    <WalletButton />
+                    {!isMiniPay && <WalletButton />}
                 </div>
             </header>
 

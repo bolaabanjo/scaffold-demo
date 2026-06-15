@@ -1,14 +1,17 @@
 'use client';
 
-import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { useWriteContract, useWaitForTransactionReceipt, useChainId } from 'wagmi';
 import { parseUnits, erc20Abi } from 'viem';
-import { CUSD_ADDRESS, RECEIVER_WALLET, PRO_MESSAGE_COST } from './constants';
+import { getCusdAddress, RECEIVER_WALLET, PRO_MESSAGE_COST } from './constants';
 
 /**
  * Hook to handle cUSD payment for Pro messages on Celo.
  * Triggers an ERC-20 transfer of PRO_MESSAGE_COST cUSD to the receiver wallet.
  */
 export function usePayForProMessage() {
+    const chainId = useChainId();
+    const cusdAddress = getCusdAddress(chainId);
+
     const {
         data: txHash,
         writeContract,
@@ -27,7 +30,7 @@ export function usePayForProMessage() {
 
     const pay = () => {
         writeContract({
-            address: CUSD_ADDRESS,
+            address: cusdAddress,
             abi: erc20Abi,
             functionName: 'transfer',
             args: [RECEIVER_WALLET, parseUnits(PRO_MESSAGE_COST, 18)],
