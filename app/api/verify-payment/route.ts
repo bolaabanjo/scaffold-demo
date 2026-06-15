@@ -1,10 +1,16 @@
-import { createPublicClient, http, erc20Abi, parseUnits, getAddress } from 'viem';
-import { celo, celoAlfajores } from 'viem/chains';
+import { createPublicClient, http, erc20Abi, parseUnits, getAddress, type Chain } from 'viem';
+import { celo, celoAlfajores, celoSepolia } from 'viem/chains';
 import { CUSD_ADDRESSES, RECEIVER_WALLET, PRO_MESSAGE_COST } from '@/lib/constants';
 
 function getPublicClient(chainId: number) {
+    let chain: Chain = celoAlfajores;
+    if (chainId === 42220) {
+        chain = celo;
+    } else if (chainId === 11142220) {
+        chain = celoSepolia;
+    }
     return createPublicClient({
-        chain: chainId === 42220 ? celo : celoAlfajores,
+        chain,
         transport: http(),
     });
 }
