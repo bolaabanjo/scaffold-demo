@@ -18,6 +18,7 @@ import {
     SmartPhone01Icon,
     FlashIcon,
 } from '@hugeicons/core-free-icons';
+import ReactMarkdown from 'react-markdown';
 
 const ArrowUpIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -214,7 +215,15 @@ export function Chat() {
                 {messages.map((message) => (
                     <div key={message.id} className={`message-row ${message.role}`}>
                         <div className={`message-bubble ${message.role}`}>
-                            {getMessageText(message)}
+                            {message.role === 'assistant' ? (
+                                <div className="markdown-content">
+                                    <ReactMarkdown>
+                                        {getMessageText(message)}
+                                    </ReactMarkdown>
+                                </div>
+                            ) : (
+                                getMessageText(message)
+                            )}
                         </div>
                     </div>
                 ))}

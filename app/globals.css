@@ -585,6 +585,103 @@ code {
 }
 
 /* ============================================
+   MARKDOWN CONTENT
+   ============================================ */
+
+.markdown-content {
+    white-space: normal;
+}
+
+.markdown-content p {
+    margin: 0 0 0.8rem 0;
+}
+
+.markdown-content p:last-child {
+    margin-bottom: 0;
+}
+
+.markdown-content ul, 
+.markdown-content ol {
+    margin: 0 0 0.8rem 1.25rem;
+    padding: 0;
+}
+
+.markdown-content ul {
+    list-style-type: disc;
+}
+
+.markdown-content ol {
+    list-style-type: decimal;
+}
+
+.markdown-content li {
+    margin-bottom: 0.3rem;
+}
+
+.markdown-content li:last-child {
+    margin-bottom: 0;
+}
+
+.markdown-content code {
+    font-family: var(--font-mono);
+    font-size: 0.85em;
+    background: var(--bg-elevated);
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-subtle);
+}
+
+.markdown-content pre {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 0.8rem 1rem;
+    margin: 0.8rem 0;
+    overflow-x: auto;
+    white-space: pre;
+}
+
+.markdown-content pre code {
+    background: transparent;
+    padding: 0;
+    border: none;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    display: block;
+}
+
+.markdown-content h1, 
+.markdown-content h2, 
+.markdown-content h3, 
+.markdown-content h4 {
+    color: var(--text-primary);
+    font-weight: 600;
+    margin: 1.2rem 0 0.6rem 0;
+}
+
+.markdown-content h1 { font-size: 1.3rem; }
+.markdown-content h2 { font-size: 1.15rem; }
+.markdown-content h3 { font-size: 1.05rem; }
+.markdown-content h4 { font-size: 1rem; }
+
+.markdown-content strong {
+    font-weight: 600;
+}
+
+.markdown-content a {
+    color: var(--accent-standard);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.markdown-content blockquote {
+    border-left: 3px solid var(--border-subtle);
+    margin: 0.8rem 0;
+    padding-left: 0.8rem;
+    color: var(--text-muted);
+}
+
+/* ============================================
    LOADING INDICATOR
    ============================================ */
 
