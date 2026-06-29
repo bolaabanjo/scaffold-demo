@@ -2,9 +2,9 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-    title: 'Basecamp — Web3 AI Assistant',
-    description: 'Your on-chain AI assistant. Ask anything about Web3, Celo, smart contracts, and DeFi. Free Standard tier, premium Pro tier powered by Celo payments.',
-    keywords: ['web3', 'celo', 'ai', 'chatbot', 'blockchain', 'smart contracts', 'defi'],
+    title: 'Basecamp — AI Assistant',
+    description: 'A general-purpose AI assistant powered by Cencori. Ask anything about software engineering, data science, DevOps, and more.',
+    keywords: ['ai', 'chatbot', 'assistant', 'cencori', 'productivity'],
 };
 
 export default function RootLayout({

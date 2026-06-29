@@ -1,6 +1,5 @@
 /* ============================================
    BASECAMP — Global Styles
-   A dark, refined Web3 aesthetic
    ============================================ */
 
 *,
@@ -75,7 +74,6 @@ body {
     line-height: 1.6;
 }
 
-/* Subtle noise/grain texture */
 body::before {
     content: '';
     position: fixed;
@@ -158,19 +156,6 @@ code {
     line-height: 1;
 }
 
-.app-badge {
-    font-family: var(--font-mono);
-    font-size: 0.6rem;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--accent-standard);
-    background: var(--accent-standard-dim);
-    padding: 2px 7px;
-    border-radius: var(--radius-full);
-    line-height: 1.5;
-}
-
 .header-center {
     position: absolute;
     left: 50%;
@@ -184,10 +169,6 @@ code {
     min-width: 140px;
     justify-content: flex-end;
 }
-
-/* ============================================
-   TIER TOGGLE
-   ============================================ */
 
 /* ============================================
    TIER SELECTOR (INPUT AREA DROPDOWN)
@@ -219,18 +200,6 @@ code {
 .tier-selector-btn:hover {
     border-color: var(--border-default);
     background: var(--bg-elevated);
-}
-
-.tier-selector-icon.standard {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--accent-standard);
-    box-shadow: 0 0 6px var(--accent-standard);
-}
-
-.tier-selector-icon.pro {
-    filter: drop-shadow(0 0 2px var(--accent-pro));
 }
 
 .tier-selector-label {
@@ -322,17 +291,6 @@ code {
     color: var(--text-muted);
 }
 
-.tier-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-}
-
-.tier-dot-standard {
-    background: var(--accent-standard);
-    box-shadow: 0 0 6px var(--accent-standard);
-}
-
 /* ============================================
    WALLET BUTTON
    ============================================ */
@@ -394,6 +352,141 @@ code {
 }
 
 /* ============================================
+   SUBSCRIPTION BAR (in message area)
+   ============================================ */
+
+.subscription-bar {
+    text-align: center;
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-md);
+    font-size: 0.8rem;
+    animation: message-in 0.35s ease both;
+}
+
+.subscription-bar.active {
+    background: var(--accent-standard-dim);
+    color: var(--accent-standard);
+    border: 1px solid rgba(53, 208, 127, 0.15);
+}
+
+/* ============================================
+   SUBSCRIPTION PROMPT (floating bar)
+   ============================================ */
+
+.subscription-prompt {
+    position: fixed;
+    bottom: 80px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    padding: 0 1rem;
+    z-index: 50;
+    animation: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes slide-up {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.subscription-prompt-inner {
+    width: 100%;
+    max-width: 48rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid rgba(252, 255, 82, 0.12);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3),
+                0 0 0 1px rgba(252, 255, 82, 0.05);
+}
+
+.subscription-prompt-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.subscription-prompt-text strong {
+    color: var(--accent-pro);
+    font-weight: 600;
+}
+
+.prompt-sub {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.subscription-prompt-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+.payment-cancel {
+    padding: 6px 14px;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--border-subtle);
+    background: transparent;
+    color: var(--text-muted);
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.payment-cancel:hover {
+    color: var(--text-secondary);
+    border-color: var(--border-default);
+}
+
+.payment-confirm {
+    padding: 6px 16px;
+    border-radius: var(--radius-full);
+    border: none;
+    background: var(--accent-pro);
+    color: var(--text-inverse);
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.payment-confirm:hover {
+    transform: scale(1.03);
+    box-shadow: 0 0 16px var(--accent-pro-glow);
+}
+
+.payment-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--border-default);
+    border-top-color: var(--accent-pro);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ============================================
    CHAT MAIN — Messages Area
    ============================================ */
 
@@ -443,23 +536,6 @@ code {
     text-align: center;
 }
 
-.welcome-icon-ring {
-    width: 64px;
-    height: 64px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(135deg, var(--accent-standard-dim), var(--accent-pro-dim));
-    border: 1px solid var(--glass-border);
-    margin-bottom: 0.5rem;
-    animation: welcome-in 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
-}
-
-.welcome-icon {
-    color: var(--text-secondary);
-}
-
 .welcome-title {
     font-family: var(--font-display);
     font-size: 1.6rem;
@@ -484,11 +560,6 @@ code {
     font-size: 0.8rem;
     color: var(--text-muted);
     margin-top: 0.25rem;
-}
-
-.tier-bolt-inline {
-    font-size: 0.75rem;
-    filter: drop-shadow(0 0 2px var(--accent-pro));
 }
 
 /* ============================================
@@ -600,7 +671,7 @@ code {
     margin-bottom: 0;
 }
 
-.markdown-content ul, 
+.markdown-content ul,
 .markdown-content ol {
     margin: 0 0 0.8rem 1.25rem;
     padding: 0;
@@ -650,9 +721,9 @@ code {
     display: block;
 }
 
-.markdown-content h1, 
-.markdown-content h2, 
-.markdown-content h3, 
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3,
 .markdown-content h4 {
     color: var(--text-primary);
     font-weight: 600;
@@ -723,125 +794,6 @@ code {
 }
 
 /* ============================================
-   PAYMENT BAR
-   ============================================ */
-
-.payment-bar {
-    position: fixed;
-    bottom: 80px;
-    left: 0;
-    right: 0;
-    display: flex;
-    justify-content: center;
-    padding: 0 1rem;
-    z-index: 50;
-    animation: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-@keyframes slide-up {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.payment-bar-inner {
-    width: 100%;
-    max-width: 48rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.75rem 1rem;
-    background: var(--glass-bg);
-    backdrop-filter: blur(var(--glass-blur));
-    -webkit-backdrop-filter: blur(var(--glass-blur));
-    border: 1px solid rgba(252, 255, 82, 0.12);
-    border-radius: var(--radius-lg);
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3),
-                0 0 0 1px rgba(252, 255, 82, 0.05);
-}
-
-.payment-info {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.payment-bolt {
-    font-size: 1rem;
-    filter: drop-shadow(0 0 4px var(--accent-pro));
-}
-
-.payment-text {
-    font-size: 0.85rem;
-    color: var(--text-secondary);
-}
-
-.payment-text strong {
-    color: var(--accent-pro);
-    font-weight: 600;
-}
-
-.payment-actions {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.payment-cancel {
-    padding: 6px 14px;
-    border-radius: var(--radius-full);
-    border: 1px solid var(--border-subtle);
-    background: transparent;
-    color: var(--text-muted);
-    font-family: var(--font-body);
-    font-size: 0.8rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.payment-cancel:hover {
-    color: var(--text-secondary);
-    border-color: var(--border-default);
-}
-
-.payment-confirm {
-    padding: 6px 16px;
-    border-radius: var(--radius-full);
-    border: none;
-    background: var(--accent-pro);
-    color: var(--text-inverse);
-    font-family: var(--font-body);
-    font-size: 0.8rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.payment-confirm:hover {
-    transform: scale(1.03);
-    box-shadow: 0 0 16px var(--accent-pro-glow);
-}
-
-.payment-spinner {
-    width: 16px;
-    height: 16px;
-    border: 2px solid var(--border-default);
-    border-top-color: var(--accent-pro);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-    to { transform: rotate(360deg); }
-}
-
-/* ============================================
    INPUT AREA
    ============================================ */
 
@@ -884,23 +836,13 @@ code {
     box-shadow: 0 0 0 3px rgba(53, 208, 127, 0.06);
 }
 
-.input-tier-badge {
-    font-size: 0.85rem;
-    line-height: 1;
-    flex-shrink: 0;
-}
-
-.input-tier-badge.pro {
-    filter: drop-shadow(0 0 3px var(--accent-pro));
-}
-
 .chat-input {
     flex: 1;
     background: transparent;
     border: none;
     outline: none;
     color: var(--text-primary);
-    font-size: 16px; /* Prevents mobile browser auto-zoom on focus */
+    font-size: 16px;
     font-family: var(--font-body);
     resize: none;
     height: 24px;
@@ -992,20 +934,6 @@ code {
         min-width: auto;
     }
 
-    .app-badge {
-        display: none;
-    }
-
-    .tier-option {
-        padding: 5px 10px;
-        font-size: 0.75rem;
-    }
-
-    .wallet-btn {
-        padding: 5px 10px;
-        font-size: 0.75rem;
-    }
-
     .chat-main {
         padding: calc(var(--header-height) + 1rem) 0.75rem 9rem 0.75rem;
     }
@@ -1021,20 +949,6 @@ code {
     .chip {
         font-size: 0.78rem;
         padding: 6px 12px;
-    }
-
-    .payment-bar {
-        bottom: 72px;
-    }
-
-    .payment-bar-inner {
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-
-    .payment-actions {
-        width: 100%;
-        justify-content: flex-end;
     }
 }
 
@@ -1088,24 +1002,6 @@ code {
 
     .chat-submit.pro {
         background: var(--accent-pro);
-        color: var(--text-inverse);
-    }
-
-    .payment-bar-inner {
-        border-color: rgba(202, 138, 4, 0.2);
-        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08),
-                    0 0 0 1px rgba(202, 138, 4, 0.08);
-    }
-
-    .tier-slider {
-        background: var(--accent-standard);
-    }
-
-    .tier-slider.pro {
-        background: var(--accent-pro);
-    }
-
-    .tier-option.active {
         color: var(--text-inverse);
     }
 }

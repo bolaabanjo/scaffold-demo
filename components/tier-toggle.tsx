@@ -15,7 +15,6 @@ export function TierToggle({ tier, onChange, disabled }: TierToggleProps) {
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
 
-    // Close dropdown on click outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
@@ -79,7 +78,7 @@ export function TierToggle({ tier, onChange, disabled }: TierToggleProps) {
                         <div className="option-header">
                             <span className="option-name">Pro</span>
                         </div>
-                        <span className="option-desc">$0.02 cUSD / msg · Advanced models</span>
+                        <span className="option-desc">Advanced GPT & Claude models</span>
                     </button>
                 </div>
             )}

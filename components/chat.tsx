@@ -7,16 +7,14 @@ import { useAccount, useConnect, useChainId } from 'wagmi';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { TierToggle } from './tier-toggle';
 import { WalletButton } from './wallet-button';
-import { usePayForProMessage } from '@/lib/payment';
-import { PRO_MESSAGE_COST } from '@/lib/constants';
+import { usePaySubscription } from '@/lib/payment';
 import type { Tier } from '@/cencori.config';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
     Globe02Icon,
-    LockIcon,
+    CodeIcon,
     Note01Icon,
-    SmartPhone01Icon,
-    FlashIcon,
+    TerminalIcon,
 } from '@hugeicons/core-free-icons';
 import ReactMarkdown from 'react-markdown';
 
@@ -34,17 +32,20 @@ function getMessageText(message: { parts: Array<{ type: string; text?: string }>
 }
 
 const SUGGESTION_CHIPS = [
-    { label: 'What is Celo?', icon: Globe02Icon },
-    { label: 'Explain staking', icon: LockIcon },
-    { label: 'Write a Solidity contract', icon: Note01Icon },
-    { label: 'How does MiniPay work?', icon: SmartPhone01Icon },
+    { label: 'Explain quantum computing', icon: Globe02Icon },
+    { label: 'Write a poem about AI', icon: CodeIcon },
+    { label: 'How do I start gardening?', icon: Note01Icon },
+    { label: 'Tips for public speaking', icon: TerminalIcon },
 ];
 
 export function Chat() {
     const [input, setInput] = useState('');
     const [tier, setTier] = useState<Tier>('standard');
-    const [pendingMessage, setPendingMessage] = useState<string | null>(null);
-    const [paymentStatus, setPaymentStatus] = useState<'idle' | 'confirming' | 'paying' | 'verifying'>('idle');
+    const [subscriptionStatus, setSubscriptionStatus] = useState<'none' | 'active' | 'expired'>('none');
+    const [subscriptionExpiry, setSubscriptionExpiry] = useState<number | null>(null);
+    const [showSubscribePrompt, setShowSubscribePrompt] = useState(false);
+    const [payStatus, setPayStatus] = useState<'idle' | 'confirming' | 'paying' | 'verifying'>('idle');
+    const [isMiniPay, setIsMiniPay] = useState(false);
 
     const { messages, sendMessage, status, error } = useChat({
         transport: new DefaultChatTransport({ api: '/api/chat' }),
@@ -53,12 +54,11 @@ export function Chat() {
     const inputRef = useRef<HTMLTextAreaElement>(null);
     const isLoading = status !== 'ready';
 
-    const { isConnected } = useAccount();
+    const { isConnected, address } = useAccount();
     const chainId = useChainId();
     const { connect, connectors } = useConnect();
-    const [isMiniPay, setIsMiniPay] = useState(false);
     const { openConnectModal } = useConnectModal();
-    const { pay, txHash, isPending, isConfirming, isSuccess, error: payError, reset: resetPayment } = usePayForProMessage();
+    const { pay, txHash, isPending, isConfirming, isSuccess, error: payError, reset } = usePaySubscription();
 
     // Detect MiniPay and auto-connect
     useEffect(() => {
@@ -75,38 +75,68 @@ export function Chat() {
         }
     }, [connect, connectors, isConnected]);
 
-    // Auto-scroll to bottom
+    // Check subscription on connect / address change
+    useEffect(() => {
+        if (isConnected && address) {
+            fetch(`/api/check-subscription?wallet=${address}`)
+                .then((r) => r.json())
+                .then((data) => {
+                    if (data.active) {
+                        setSubscriptionStatus('active');
+                        setSubscriptionExpiry(data.expiresAt);
+                    } else {
+                        setSubscriptionStatus('none');
+                        setSubscriptionExpiry(null);
+                    }
+                })
+                .catch(() => setSubscriptionStatus('none'));
+        } else {
+            setSubscriptionStatus('none');
+            setSubscriptionExpiry(null);
+        }
+    }, [isConnected, address]);
+
     useEffect(() => {
         if (scrollRef.current) {
             scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
         }
     }, [messages]);
 
-    // Focus input on mount
     useEffect(() => {
         inputRef.current?.focus();
     }, []);
 
-    // Handle successful payment — send the pending message
+    // Handle successful payment — activate subscription
     useEffect(() => {
-        if (isSuccess && txHash && pendingMessage) {
-            setPaymentStatus('verifying');
-            void sendMessage({
-                text: pendingMessage,
-                metadata: { tier: 'pro', txHash, chainId },
-            });
-            setPendingMessage(null);
-            setPaymentStatus('idle');
-            resetPayment();
+        if (isSuccess && txHash && address) {
+            setPayStatus('verifying');
+            fetch('/api/subscribe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ txHash, chainId, walletAddress: address }),
+            })
+                .then((r) => r.json())
+                .then((data) => {
+                    if (data.success) {
+                        setSubscriptionStatus('active');
+                        setSubscriptionExpiry(data.subscription.expires_at);
+                        setShowSubscribePrompt(false);
+                        setPayStatus('idle');
+                        reset();
+                    }
+                })
+                .catch(() => {
+                    setPayStatus('idle');
+                    reset();
+                });
         }
-    }, [isSuccess, txHash, pendingMessage, sendMessage, resetPayment, chainId]);
+    }, [isSuccess, txHash, address, chainId, reset]);
 
-    // Update payment status display
     useEffect(() => {
-        if (isPending) setPaymentStatus('paying');
-        else if (isConfirming) setPaymentStatus('verifying');
-        else if (!isPending && !isConfirming && paymentStatus !== 'confirming') setPaymentStatus('idle');
-    }, [isPending, isConfirming, paymentStatus]);
+        if (isPending) setPayStatus('paying');
+        else if (isConfirming) setPayStatus('verifying');
+        else if (!isPending && !isConfirming && payStatus !== 'confirming') setPayStatus('idle');
+    }, [isPending, isConfirming, payStatus]);
 
     const handleSend = useCallback((text: string) => {
         if (!text.trim() || isLoading) return;
@@ -116,34 +146,43 @@ export function Chat() {
                 openConnectModal?.();
                 return;
             }
-            // Show confirmation, then pay
-            setPendingMessage(text);
-            setPaymentStatus('confirming');
-        } else {
-            // Standard — just send
-            void sendMessage({
-                text,
-                metadata: { tier: 'standard' },
-            });
+            if (subscriptionStatus !== 'active') {
+                setShowSubscribePrompt(true);
+                return;
+            }
         }
 
+        void sendMessage({
+            text,
+            metadata: { tier, walletAddress: address },
+        });
         setInput('');
-    }, [tier, isConnected, openConnectModal, isLoading, sendMessage]);
+    }, [tier, isConnected, openConnectModal, isLoading, sendMessage, subscriptionStatus, address]);
+
+    const handleSubscribe = () => {
+        setPayStatus('confirming');
+    };
 
     const handleConfirmPayment = () => {
         pay();
     };
 
     const handleCancelPayment = () => {
-        setPendingMessage(null);
-        setPaymentStatus('idle');
-        resetPayment();
+        setShowSubscribePrompt(false);
+        setPayStatus('idle');
+        reset();
     };
 
     const handleTierChange = (newTier: Tier) => {
-        if (newTier === 'pro' && !isConnected) {
-            openConnectModal?.();
-            return;
+        if (newTier === 'pro') {
+            if (!isConnected) {
+                openConnectModal?.();
+                return;
+            }
+            if (subscriptionStatus !== 'active') {
+                setShowSubscribePrompt(true);
+                return;
+            }
         }
         setTier(newTier);
     };
@@ -155,6 +194,10 @@ export function Chat() {
         }
     };
 
+    const daysLeft = subscriptionExpiry
+        ? Math.max(0, Math.floor((subscriptionExpiry * 1000 - Date.now()) / (1000 * 60 * 60 * 24)))
+        : 0;
+
     const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         handleSend(input);
@@ -162,31 +205,27 @@ export function Chat() {
 
     return (
         <div className="chat-container">
-            {/* Header */}
             <header className="chat-header" id="chat-header">
                 <div className="header-left">
                     <h1 className="app-name">basecamp</h1>
-                    <span className="app-badge">web3</span>
                 </div>
                 <div className="header-right">
                     {!isMiniPay && <WalletButton />}
                 </div>
             </header>
 
-            {/* Messages Area */}
             <div className="chat-main" ref={scrollRef}>
                 {messages.length === 0 && (
                     <div className="welcome-container">
                         <div className="welcome-hero">
                             <h2 className="welcome-title">What do you want to know?</h2>
                             <p className="welcome-subtitle">
-                                Web3 knowledge, Celo expertise, smart contracts — ask anything.
+                                Ask anything — I'm here to help.
                                 <br />
                                 <span className="welcome-tier-hint">
-                                    <span/> Free with Standard
+                                    Free with Standard
                                     &nbsp;·&nbsp;
-                                    <span style={{ display: 'inline-flex', alignItems: 'center', color: 'var(--accent-pro)' }}>
-                                    </span> Premium with Pro
+                                    Premium with Pro
                                 </span>
                             </p>
                         </div>
@@ -249,47 +288,68 @@ export function Chat() {
                         Payment failed: {payError.message || 'Transaction was rejected.'}
                     </div>
                 )}
+
+                {/* Pro subscription status bar */}
+                {tier === 'pro' && subscriptionStatus === 'active' && (
+                    <div className="subscription-bar active">
+                        <span>Pro active — {daysLeft} day{daysLeft !== 1 ? 's' : ''} remaining</span>
+                    </div>
+                )}
             </div>
 
-            {/* Payment Confirmation Bar */}
-            {paymentStatus === 'confirming' && pendingMessage && (
-                <div className="payment-bar" id="payment-bar">
-                    <div className="payment-bar-inner">
-                        <div className="payment-info">
-                            <span className="payment-bolt" style={{ display: 'inline-flex', alignItems: 'center' }}>
-                                <HugeiconsIcon icon={FlashIcon} size={16} color="var(--accent-pro)" />
-                            </span>
-                            <span className="payment-text">
-                                Pro message costs <strong>{PRO_MESSAGE_COST} cUSD</strong>
-                            </span>
+            {/* Subscribe prompt */}
+            {showSubscribePrompt && payStatus === 'idle' && (
+                <div className="subscription-prompt" id="subscribe-prompt">
+                    <div className="subscription-prompt-inner">
+                        <div className="subscription-prompt-text">
+                            Subscribe to Pro — <strong>3 cUSD / month</strong>
+                            <span className="prompt-sub">Unlimited access to GPT-4o, Claude, and Grok</span>
                         </div>
-                        <div className="payment-actions">
+                        <div className="subscription-prompt-actions">
                             <button className="payment-cancel" onClick={handleCancelPayment} type="button">
                                 Cancel
                             </button>
                             <button className="payment-confirm" onClick={handleConfirmPayment} type="button">
-                                Pay & Send
+                                Pay 3 cUSD
                             </button>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Payment Processing Overlay */}
-            {(paymentStatus === 'paying' || paymentStatus === 'verifying') && (
-                <div className="payment-bar" id="payment-processing">
-                    <div className="payment-bar-inner">
-                        <div className="payment-info">
+            {/* Payment confirmation */}
+            {payStatus === 'confirming' && (
+                <div className="subscription-prompt" id="payment-confirm">
+                    <div className="subscription-prompt-inner">
+                        <div className="subscription-prompt-text">
+                            Confirm <strong>3 cUSD</strong> in your wallet to subscribe
+                        </div>
+                        <div className="subscription-prompt-actions">
+                            <button className="payment-cancel" onClick={handleCancelPayment} type="button">
+                                Cancel
+                            </button>
+                            <button className="payment-confirm" onClick={handleConfirmPayment} type="button">
+                                Confirm
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Payment processing */}
+            {(payStatus === 'paying' || payStatus === 'verifying') && (
+                <div className="subscription-prompt" id="payment-processing">
+                    <div className="subscription-prompt-inner">
+                        <div className="subscription-prompt-text">
                             <div className="payment-spinner" />
-                            <span className="payment-text">
-                                {paymentStatus === 'paying' ? 'Confirm in your wallet...' : 'Verifying payment...'}
+                            <span>
+                                {payStatus === 'paying' ? 'Confirm in your wallet...' : 'Verifying payment...'}
                             </span>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Input Area */}
             <div className="chat-input-wrapper">
                 <div className="chat-input-container">
                     <form onSubmit={onSubmit} className="chat-form">
@@ -299,7 +359,7 @@ export function Chat() {
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             onKeyDown={onKeyDown}
-                            placeholder={tier === 'pro' ? 'Ask with Pro models...' : 'Ask anything about Web3...'}
+                            placeholder="Ask anything..."
                             className="chat-input"
                             rows={1}
                             id="chat-input"
@@ -307,7 +367,7 @@ export function Chat() {
                         <TierToggle tier={tier} onChange={handleTierChange} disabled={isLoading} />
                         <button
                             type="submit"
-                            disabled={isLoading || !input.trim() || paymentStatus !== 'idle'}
+                            disabled={isLoading || !input.trim() || payStatus !== 'idle'}
                             className={`chat-submit ${tier === 'pro' ? 'pro' : ''}`}
                             aria-label="Send message"
                             id="chat-submit-btn"
@@ -320,11 +380,6 @@ export function Chat() {
                         <span>Powered by</span>
                         <a href="https://cencori.com" target="_blank" rel="noopener noreferrer" className="brand-link">
                             Cencori
-                        </a>
-                        <span className="footer-sep">·</span>
-                        <span>Payments on</span>
-                        <a href="https://celo.org" target="_blank" rel="noopener noreferrer" className="brand-link">
-                            Celo
                         </a>
                     </div>
                 </div>
