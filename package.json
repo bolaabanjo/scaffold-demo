@@ -6,7 +6,8 @@
         "dev": "next dev",
         "build": "next build",
         "start": "next start",
-        "lint": "next lint"
+        "lint": "next lint",
+        "postinstall": "node -e \"try{fs.mkdirSync(require('path').join(__dirname,'node_modules/@coinbase/cdp-sdk/node_modules'),{recursive:true})}catch(e){};try{fs.symlinkSync(require('path').join(__dirname,'node_modules/zod'),require('path').join(__dirname,'node_modules/@coinbase/cdp-sdk/node_modules/zod'),'junction')}catch(e){}\""
     },
     "dependencies": {
         "@ai-sdk/react": "^3.0.0",
@@ -22,7 +23,8 @@
         "react-dom": "^19.0.0",
         "react-markdown": "^10.1.0",
         "viem": "^2.52.2",
-        "wagmi": "^2.19.5"
+        "wagmi": "^2.19.5",
+        "zod": "^3.24.0"
     },
     "devDependencies": {
         "@types/better-sqlite3": "^7.6.12",

@@ -1,7 +1,8 @@
 import { cencori } from 'cencori';
 import { cencoriConfig, type Tier } from '@/cencori.config';
-import { convertToModelMessages, streamText, type UIMessage } from 'ai';
+import { convertToModelMessages, streamText, stepCountIs, type UIMessage } from 'ai';
 import { getSubscription } from '@/lib/db';
+import { tools } from '@/lib/tools';
 
 function pickModel(tier: Tier): string {
     const models = cencoriConfig.tiers[tier].models;
@@ -33,6 +34,8 @@ export async function POST(req: Request) {
         model: cencori(selectedModel),
         system: cencoriConfig.systemPrompt,
         messages: await convertToModelMessages(messages),
+        tools: tools as any,
+        stopWhen: stepCountIs(10),
         temperature: cencoriConfig.temperature,
         maxOutputTokens: cencoriConfig.maxTokens,
     });

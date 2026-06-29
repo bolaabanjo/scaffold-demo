@@ -7,6 +7,7 @@ import { useAccount, useConnect, useChainId } from 'wagmi';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { TierToggle } from './tier-toggle';
 import { WalletButton } from './wallet-button';
+import { AgentMessage } from './agent-message';
 import { usePaySubscription } from '@/lib/payment';
 import type { Tier } from '@/cencori.config';
 import { HugeiconsIcon } from '@hugeicons/react';
@@ -16,7 +17,6 @@ import {
     Note01Icon,
     TerminalIcon,
 } from '@hugeicons/core-free-icons';
-import ReactMarkdown from 'react-markdown';
 
 const ArrowUpIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -24,12 +24,6 @@ const ArrowUpIcon = () => (
         <path d="M12 19V5"/>
     </svg>
 );
-
-function getMessageText(message: { parts: Array<{ type: string; text?: string }> }) {
-    return message.parts
-        .map((part) => (part.type === 'text' ? part.text || '' : ''))
-        .join('');
-}
 
 const SUGGESTION_CHIPS = [
     { label: 'Explain quantum computing', icon: Globe02Icon },
@@ -254,15 +248,7 @@ export function Chat() {
                 {messages.map((message) => (
                     <div key={message.id} className={`message-row ${message.role}`}>
                         <div className={`message-bubble ${message.role}`}>
-                            {message.role === 'assistant' ? (
-                                <div className="markdown-content">
-                                    <ReactMarkdown>
-                                        {getMessageText(message)}
-                                    </ReactMarkdown>
-                                </div>
-                            ) : (
-                                getMessageText(message)
-                            )}
+                            <AgentMessage parts={message.parts as any} role={message.role} />
                         </div>
                     </div>
                 ))}
