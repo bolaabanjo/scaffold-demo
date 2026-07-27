@@ -436,11 +436,6 @@ export function Chat() {
                         <a href="https://cencori.com" target="_blank" rel="noopener noreferrer" className="brand-link">
                             Cencori
                         </a>
-                        <span className="chat-footer-links">
-                            &nbsp;·&nbsp;
-                            <a href="/terms">Terms</a>
-                            <a href="/privacy">Privacy</a>
-                        </span>
                     </div>
                 </div>
             </div>
