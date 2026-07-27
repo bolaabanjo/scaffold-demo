@@ -7,7 +7,6 @@ import { useAccount, useConnect, useChainId } from 'wagmi';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { TierToggle } from './tier-toggle';
 import { WalletButton } from './wallet-button';
-import { AgentMessage } from './agent-message';
 import { usePaySubscription } from '@/lib/payment';
 import type { Tier } from '@/cencori.config';
 import { HugeiconsIcon } from '@hugeicons/react';
@@ -17,6 +16,9 @@ import {
     Note01Icon,
     TerminalIcon,
 } from '@hugeicons/core-free-icons';
+import ReactMarkdown from 'react-markdown';
+import { ToolStep, type ToolPart } from './tool-step';
+import { detectInjection, injectionMessage } from '@/lib/sanitize';
 
 const ArrowUpIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -24,6 +26,12 @@ const ArrowUpIcon = () => (
         <path d="M12 19V5"/>
     </svg>
 );
+
+function getMessageText(message: { parts: Array<{ type: string; text?: string }> }) {
+    return message.parts
+        .map((part) => (part.type === 'text' ? part.text || '' : ''))
+        .join('');
+}
 
 const SUGGESTION_CHIPS = [
     { label: 'Explain quantum computing', icon: Globe02Icon },
@@ -40,6 +48,7 @@ export function Chat() {
     const [showSubscribePrompt, setShowSubscribePrompt] = useState(false);
     const [payStatus, setPayStatus] = useState<'idle' | 'confirming' | 'paying' | 'verifying'>('idle');
     const [isMiniPay, setIsMiniPay] = useState(false);
+    const [inputError, setInputError] = useState<string | null>(null);
 
     const { messages, sendMessage, status, error } = useChat({
         transport: new DefaultChatTransport({ api: '/api/chat' }),
@@ -96,6 +105,24 @@ export function Chat() {
         }
     }, [messages]);
 
+    // Guard against silently-empty assistant turns. The cencori gateway swallows
+    // upstream provider errors (e.g. "groq circuit is open") as HTTP-200 empty
+    // streams, so a turn can finish with no text and no tool output. Surface it.
+    const [providerBusy, setProviderBusy] = useState(false);
+    useEffect(() => {
+        if (isLoading) {
+            setProviderBusy(false);
+            return;
+        }
+        const last = messages[messages.length - 1];
+        if (last?.role === 'assistant') {
+            const hasContent = last.parts.some(
+                (p) => (p.type === 'text' && (p.text || '').trim()) || p.type.startsWith('tool-'),
+            );
+            setProviderBusy(!hasContent);
+        }
+    }, [isLoading, messages]);
+
     useEffect(() => {
         inputRef.current?.focus();
     }, []);
@@ -134,6 +161,15 @@ export function Chat() {
 
     const handleSend = useCallback((text: string) => {
         if (!text.trim() || isLoading) return;
+
+        // Input safety — block script/HTML-injection payloads before sending.
+        // The server re-checks authoritatively; this is for immediate feedback.
+        const injection = detectInjection(text);
+        if (injection.blocked) {
+            setInputError(injectionMessage(injection));
+            return;
+        }
+        setInputError(null);
 
         if (tier === 'pro') {
             if (!isConnected) {
@@ -248,7 +284,25 @@ export function Chat() {
                 {messages.map((message) => (
                     <div key={message.id} className={`message-row ${message.role}`}>
                         <div className={`message-bubble ${message.role}`}>
-                            <AgentMessage parts={message.parts as any} role={message.role} />
+                            {message.role === 'assistant' ? (
+                                <div className="assistant-parts">
+                                    {message.parts.map((part, i) => {
+                                        if (part.type === 'text') {
+                                            return (
+                                                <div className="markdown-content" key={i}>
+                                                    <ReactMarkdown>{part.text || ''}</ReactMarkdown>
+                                                </div>
+                                            );
+                                        }
+                                        if (part.type.startsWith('tool-')) {
+                                            return <ToolStep key={i} part={part as unknown as ToolPart} />;
+                                        }
+                                        return null;
+                                    })}
+                                </div>
+                            ) : (
+                                getMessageText(message)
+                            )}
                         </div>
                     </div>
                 ))}
@@ -260,6 +314,18 @@ export function Chat() {
                                 <span className="loading-dot" /><span className="loading-dot" /><span className="loading-dot" />
                             </div>
                         </div>
+                    </div>
+                )}
+
+                {inputError && (
+                    <div className="chat-error" id="input-error">
+                        {inputError}
+                    </div>
+                )}
+
+                {providerBusy && (
+                    <div className="chat-error" id="provider-busy">
+                        The AI provider is busy right now (rate limited upstream). Please try again in a moment.
                     </div>
                 )}
 
@@ -343,7 +409,10 @@ export function Chat() {
                             ref={inputRef}
                             name="prompt"
                             value={input}
-                            onChange={(e) => setInput(e.target.value)}
+                            onChange={(e) => {
+                                setInput(e.target.value);
+                                if (inputError) setInputError(null);
+                            }}
                             onKeyDown={onKeyDown}
                             placeholder="Ask anything..."
                             className="chat-input"
@@ -367,6 +436,11 @@ export function Chat() {
                         <a href="https://cencori.com" target="_blank" rel="noopener noreferrer" className="brand-link">
                             Cencori
                         </a>
+                        <span className="chat-footer-links">
+                            &nbsp;·&nbsp;
+                            <a href="/terms">Terms</a>
+                            <a href="/privacy">Privacy</a>
+                        </span>
                     </div>
                 </div>
             </div>

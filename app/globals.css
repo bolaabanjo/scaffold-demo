@@ -656,231 +656,6 @@ code {
 }
 
 /* ============================================
-   AGENT MESSAGE — Structured UI
-   ============================================ */
-
-.agent-message {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.agent-text-block {
-    font-size: 0.9rem;
-    line-height: 1.7;
-}
-
-.agent-text-block p {
-    margin: 0 0 0.6rem 0;
-}
-
-.agent-text-block p:last-child {
-    margin-bottom: 0;
-}
-
-/* --- Tool Card --- */
-
-.tool-card {
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-md);
-    background: var(--bg-surface);
-    overflow: hidden;
-    animation: card-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-@keyframes card-in {
-    from {
-        opacity: 0;
-        transform: translateY(6px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.tool-card-header {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 0.75rem;
-    border-bottom: 1px solid var(--border-subtle);
-    font-size: 0.78rem;
-    font-weight: 500;
-    color: var(--text-secondary);
-}
-
-.tool-card-icon {
-    display: inline-flex;
-    align-items: center;
-    color: var(--text-muted);
-}
-
-.tool-card-name {
-    flex: 1;
-}
-
-.tool-card-status {
-    display: flex;
-    align-items: center;
-}
-
-.status-dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-}
-
-.status-dot.running {
-    background: var(--accent-pro);
-    box-shadow: 0 0 6px var(--accent-pro);
-    animation: dot-pulse 1.4s infinite ease-in-out both;
-}
-
-.status-dot.done {
-    background: var(--accent-standard);
-    box-shadow: 0 0 6px var(--accent-standard);
-}
-
-.tool-card-body {
-    padding: 0.6rem 0.75rem;
-}
-
-.tool-card-args {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.4rem 0.75rem;
-    margin-bottom: 0.5rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid var(--border-subtle);
-}
-
-.tool-arg {
-    display: flex;
-    align-items: center;
-    gap: 0.3rem;
-    font-size: 0.78rem;
-}
-
-.tool-arg-key {
-    color: var(--text-muted);
-    font-size: 0.7rem;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-}
-
-.tool-arg-value {
-    color: var(--text-primary);
-    font-family: var(--font-mono);
-    font-size: 0.78rem;
-    background: var(--bg-elevated);
-    padding: 1px 6px;
-    border-radius: 4px;
-}
-
-.tool-card-streaming {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding: 0.3rem 0;
-}
-
-.tool-card-streaming .streaming-dot {
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    background: var(--text-muted);
-    animation: dot-pulse 1.4s infinite ease-in-out both;
-}
-
-.tool-card-streaming .streaming-dot:nth-child(2) { animation-delay: 0.2s; }
-.tool-card-streaming .streaming-dot:nth-child(3) { animation-delay: 0.4s; }
-
-/* --- Tool Result --- */
-
-.tool-result {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-}
-
-.tool-result.error {
-    flex-direction: row;
-    align-items: center;
-    gap: 0.4rem;
-    color: var(--accent-error);
-    font-size: 0.82rem;
-}
-
-.tool-result-row {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.82rem;
-}
-
-.tool-result-label {
-    color: var(--text-muted);
-    min-width: 80px;
-    font-size: 0.72rem;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-}
-
-.tool-result-value {
-    color: var(--text-primary);
-}
-
-/* Calculate result */
-.tool-result.calculate {
-    flex-direction: row;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.25rem 0;
-}
-
-.calc-expression {
-    font-family: var(--font-mono);
-    font-size: 0.85rem;
-    color: var(--text-secondary);
-}
-
-.calc-equals {
-    color: var(--text-muted);
-    font-size: 0.85rem;
-}
-
-.calc-result {
-    font-family: var(--font-mono);
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--accent-standard);
-}
-
-/* Weather result */
-.tool-result.weather {
-    flex-direction: row;
-    align-items: flex-start;
-    gap: 1rem;
-    padding: 0.25rem 0;
-}
-
-.weather-temp {
-    font-size: 1.6rem;
-    font-weight: 700;
-    color: var(--accent-pro);
-    line-height: 1;
-    min-width: 80px;
-}
-
-.weather-details {
-    display: flex;
-    flex-direction: column;
-    gap: 0.15rem;
-}
-
-/* ============================================
    MARKDOWN CONTENT
    ============================================ */
 
@@ -1229,4 +1004,185 @@ code {
         background: var(--accent-pro);
         color: var(--text-inverse);
     }
+}
+
+/* ============================================
+   Generative UI — Tool step (action indicator)
+   ============================================ */
+
+.assistant-parts {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.tool-step {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13.5px;
+    line-height: 1;
+    width: fit-content;
+    padding: 2px 0;
+}
+
+/* Running: muted icon + shimmering label */
+.tool-step.running {
+    color: var(--text-secondary);
+}
+
+.tool-step.running svg {
+    opacity: 0.7;
+    animation: tool-pulse 1.4s ease-in-out infinite;
+}
+
+.tool-step-shimmer {
+    background: linear-gradient(
+        100deg,
+        var(--text-muted) 30%,
+        var(--text-primary) 50%,
+        var(--text-muted) 70%
+    );
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    animation: tool-shimmer 1.6s linear infinite;
+}
+
+@keyframes tool-shimmer {
+    from { background-position: 200% 0; }
+    to { background-position: -200% 0; }
+}
+
+@keyframes tool-pulse {
+    0%, 100% { opacity: 0.45; }
+    50% { opacity: 0.9; }
+}
+
+/* Done: quiet, resolved line */
+.tool-step.done {
+    color: var(--text-muted);
+}
+
+.tool-step.done svg {
+    color: var(--accent-standard);
+}
+
+/* Error */
+.tool-step.error {
+    color: var(--accent-error);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tool-step.running svg,
+    .tool-step-shimmer {
+        animation: none;
+    }
+    .tool-step-shimmer {
+        -webkit-text-fill-color: var(--text-secondary);
+        color: var(--text-secondary);
+    }
+}
+
+/* ============================================
+   Legal pages (Terms / Privacy)
+   ============================================ */
+
+.legal-page {
+    min-height: 100vh;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    padding: 48px 20px 80px;
+}
+
+.legal-inner {
+    max-width: 720px;
+    margin: 0 auto;
+}
+
+.legal-back {
+    display: inline-block;
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 14px;
+    margin-bottom: 24px;
+}
+
+.legal-back:hover {
+    color: var(--text-primary);
+}
+
+.legal-draft-banner {
+    background: var(--accent-pro-dim);
+    border: 1px solid var(--accent-pro);
+    color: var(--text-primary);
+    border-radius: var(--radius-md);
+    padding: 10px 14px;
+    font-size: 13px;
+    margin-bottom: 28px;
+}
+
+.legal-inner h1 {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+.legal-inner h2 {
+    font-size: 17px;
+    font-weight: 600;
+    margin: 28px 0 8px;
+}
+
+.legal-updated {
+    color: var(--text-muted);
+    font-size: 13px;
+    margin-bottom: 8px;
+}
+
+.legal-inner p,
+.legal-inner li {
+    color: var(--text-secondary);
+    font-size: 15px;
+    line-height: 1.65;
+}
+
+.legal-inner ul {
+    padding-left: 20px;
+    margin: 8px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.legal-inner a {
+    color: var(--accent-standard);
+    text-decoration: none;
+}
+
+.legal-inner a:hover {
+    text-decoration: underline;
+}
+
+.legal-footer-note {
+    margin-top: 32px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-subtle);
+}
+
+.chat-footer-links {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.chat-footer-links a {
+    color: var(--text-muted);
+    text-decoration: none;
+}
+
+.chat-footer-links a:hover {
+    color: var(--text-secondary);
 }
