@@ -2,7 +2,7 @@ export const cencoriConfig = {
     tiers: {
         standard: {
             label: 'Standard',
-            models: ['gpt-oss-120b'],
+            models: ['nvidia/nemotron-3-ultra-550b-a55b:free'],
         },
         pro: {
             label: 'Pro',

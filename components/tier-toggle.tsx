@@ -66,7 +66,7 @@ export function TierToggle({ tier, onChange, disabled }: TierToggleProps) {
                         <div className="option-header">
                             <span className="option-name">Standard</span>
                         </div>
-                        <span className="option-desc">Free · Llama models</span>
+                        <span className="option-desc">Free · Nemotron model</span>
                     </button>
                     <button
                         type="button"
