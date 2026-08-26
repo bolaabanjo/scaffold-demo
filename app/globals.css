@@ -430,6 +430,36 @@ code {
     color: var(--text-muted);
 }
 
+.plan-picker {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.375rem;
+}
+
+.plan-option {
+    padding: 4px 12px;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--border-subtle);
+    background: transparent;
+    color: var(--text-muted);
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.plan-option:hover {
+    color: var(--text-secondary);
+    border-color: var(--border-default);
+}
+
+.plan-option.selected {
+    background: var(--accent-pro-dim);
+    border-color: rgba(252, 255, 82, 0.35);
+    color: var(--accent-pro);
+}
+
 .subscription-prompt-actions {
     display: flex;
     align-items: center;

@@ -3,13 +3,13 @@ import path from 'path';
 
 const DB_PATH = path.join(process.cwd(), '.data', 'basecamp.db');
 
-let db: Database.Database | null = null;
+const globalForDb = globalThis as unknown as { __basecampDb?: Database.Database };
 
 function getDb(): Database.Database {
-    if (!db) {
-        db = new Database(DB_PATH);
-        db.pragma('journal_mode = WAL');
-        db.exec(`
+    if (!globalForDb.__basecampDb) {
+        globalForDb.__basecampDb = new Database(DB_PATH);
+        globalForDb.__basecampDb.pragma('journal_mode = WAL');
+        globalForDb.__basecampDb.exec(`
             CREATE TABLE IF NOT EXISTS subscriptions (
                 wallet_address TEXT PRIMARY KEY,
                 tx_hash TEXT NOT NULL,
@@ -17,8 +17,13 @@ function getDb(): Database.Database {
                 expires_at INTEGER NOT NULL
             )
         `);
+        globalForDb.__basecampDb.exec(`
+            CREATE TABLE IF NOT EXISTS used_tx_hashes (
+                tx_hash TEXT PRIMARY KEY
+            )
+        `);
     }
-    return db;
+    return globalForDb.__basecampDb;
 }
 
 export interface Subscription {
@@ -35,9 +40,9 @@ export function getSubscription(walletAddress: string): Subscription | null {
     return row || null;
 }
 
-export function activateSubscription(walletAddress: string, txHash: string): Subscription {
+export function activateSubscription(walletAddress: string, txHash: string, durationDays: number): Subscription {
     const now = Math.floor(Date.now() / 1000);
-    const expiresAt = now + 30 * 24 * 60 * 60;
+    const expiresAt = now + durationDays * 24 * 60 * 60;
 
     getDb()
         .prepare(
@@ -63,4 +68,16 @@ export function getAllActiveSubscriptions(): Subscription[] {
         .prepare('SELECT * FROM subscriptions WHERE expires_at > ?')
         .all(Math.floor(Date.now() / 1000)) as Subscription[];
     return rows;
+}
+
+export function isTxHashUsed(txHash: string): boolean {
+    return !!getDb()
+        .prepare('SELECT 1 FROM used_tx_hashes WHERE tx_hash = ?')
+        .get(txHash.toLowerCase());
+}
+
+export function markTxHashUsed(txHash: string): void {
+    getDb()
+        .prepare('INSERT INTO used_tx_hashes (tx_hash) VALUES (?)')
+        .run(txHash.toLowerCase());
 }

@@ -1,21 +1,38 @@
 import { createPublicClient, http, erc20Abi, parseUnits, getAddress, type Chain } from 'viem';
-import { celo, celoAlfajores, celoSepolia } from 'viem/chains';
-import { CUSD_ADDRESSES, RECEIVER_WALLET, SUBSCRIPTION_COST } from '@/lib/constants';
-import { activateSubscription } from '@/lib/db';
+import { celo, celoSepolia } from 'viem/chains';
+import { CUSD_ADDRESSES, RECEIVER_WALLET, SUBSCRIPTION_PLANS, DEFAULT_PLAN_ID, type SubscriptionPlan } from '@/lib/constants';
+import { activateSubscription, isTxHashUsed, markTxHashUsed } from '@/lib/db';
 
 function getPublicClient(chainId: number) {
-    let chain: Chain = celoAlfajores;
+    let chain: Chain = celoSepolia;
     if (chainId === 42220) chain = celo;
-    else if (chainId === 11142220) chain = celoSepolia;
     return createPublicClient({ chain, transport: http() });
 }
 
 export async function POST(req: Request) {
     try {
-        const { txHash, chainId = 44787, walletAddress }: { txHash: string; chainId?: number; walletAddress: string } = await req.json();
+        const { txHash, chainId = 42220, walletAddress, planId = DEFAULT_PLAN_ID }: {
+            txHash: string;
+            chainId?: number;
+            walletAddress: string;
+            planId?: SubscriptionPlan['id'];
+        } = await req.json();
 
         if (!txHash || !txHash.startsWith('0x') || !walletAddress) {
             return Response.json({ success: false, error: 'Invalid params' }, { status: 400 });
+        }
+
+        if (isTxHashUsed(txHash)) {
+            return Response.json({ success: false, error: 'Transaction already used' }, { status: 400 });
+        }
+
+        if (chainId !== 42220 && chainId !== 11142220) {
+            return Response.json({ success: false, error: 'Unsupported chain' }, { status: 400 });
+        }
+
+        const plan = SUBSCRIPTION_PLANS.find((p) => p.id === planId);
+        if (!plan) {
+            return Response.json({ success: false, error: 'Unknown plan' }, { status: 400 });
         }
 
         const publicClient = getPublicClient(chainId);
@@ -25,7 +42,7 @@ export async function POST(req: Request) {
             return Response.json({ success: false, error: 'Transaction failed' }, { status: 400 });
         }
 
-        const cusdAddress = CUSD_ADDRESSES[chainId as keyof typeof CUSD_ADDRESSES] || CUSD_ADDRESSES[44787];
+        const cusdAddress = CUSD_ADDRESSES[chainId as keyof typeof CUSD_ADDRESSES] || CUSD_ADDRESSES[42220];
         const expectedContract = getAddress(cusdAddress);
 
         const transferEvent = receipt.logs.find((log) => {
@@ -38,6 +55,13 @@ export async function POST(req: Request) {
             return Response.json({ success: false, error: 'No transfer event found' }, { status: 400 });
         }
 
+        const sender = transferEvent.topics[1]
+            ? getAddress('0x' + transferEvent.topics[1].slice(26))
+            : null;
+        if (!sender || sender !== getAddress(walletAddress)) {
+            return Response.json({ success: false, error: 'Sender mismatch' }, { status: 400 });
+        }
+
         const recipient = transferEvent.topics[2]
             ? getAddress('0x' + transferEvent.topics[2].slice(26))
             : null;
@@ -46,11 +70,12 @@ export async function POST(req: Request) {
         }
 
         const amount = BigInt(transferEvent.data);
-        if (amount < parseUnits(SUBSCRIPTION_COST, 18)) {
+        if (amount < parseUnits(plan.cost, 18)) {
             return Response.json({ success: false, error: 'Insufficient payment' }, { status: 400 });
         }
 
-        const subscription = activateSubscription(walletAddress, txHash);
+        markTxHashUsed(txHash);
+        const subscription = activateSubscription(walletAddress, txHash, plan.days);
 
         return Response.json({ success: true, subscription });
     } catch (error) {

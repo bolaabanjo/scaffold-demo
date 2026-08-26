@@ -2,7 +2,7 @@
 
 import { useWriteContract, useWaitForTransactionReceipt, useChainId } from 'wagmi';
 import { parseUnits, erc20Abi } from 'viem';
-import { getCusdAddress, RECEIVER_WALLET, SUBSCRIPTION_COST } from './constants';
+import { getCusdAddress, RECEIVER_WALLET } from './constants';
 
 export function usePaySubscription() {
     const chainId = useChainId();
@@ -24,12 +24,12 @@ export function usePaySubscription() {
         hash: txHash,
     });
 
-    const pay = () => {
+    const pay = (cost: string) => {
         writeContract({
             address: cusdAddress,
             abi: erc20Abi,
             functionName: 'transfer',
-            args: [RECEIVER_WALLET, parseUnits(SUBSCRIPTION_COST, 18)],
+            args: [RECEIVER_WALLET, parseUnits(cost, 18)],
         });
     };
 

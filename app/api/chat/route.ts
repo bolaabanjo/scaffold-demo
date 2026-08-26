@@ -19,7 +19,16 @@ function messageText(message: UIMessage | undefined): string {
 }
 
 export async function POST(req: Request) {
-    const { messages }: { messages: UIMessage[] } = await req.json();
+    let messages: UIMessage[];
+    try {
+        const body = await req.json();
+        if (!Array.isArray(body?.messages)) {
+            return Response.json({ error: 'Invalid request body' }, { status: 400 });
+        }
+        messages = body.messages;
+    } catch {
+        return Response.json({ error: 'Invalid JSON' }, { status: 400 });
+    }
 
     const lastUserMessage = [...messages].reverse().find((m) => m.role === 'user');
 

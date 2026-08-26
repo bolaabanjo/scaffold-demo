@@ -38,9 +38,13 @@ export const tools = {
             explanation: z.string().optional().describe('Brief explanation of what is being calculated'),
         }),
         execute: async ({ expression, explanation }) => {
+            if (!/^[\d\s+\-*/().^,]*$/.test(expression.replace(/sqrt|abs|sin|cos|tan|log|ln|pi|e/gi, ''))) {
+                return { error: 'Expression contains unsupported characters', expression };
+            }
+
             const sanitized = expression
                 .replace(/pi/gi, 'Math.PI')
-                .replace(/e\b(?!\w)/gi, 'Math.E')
+                .replace(/(?<![\w.])e(?![\w.])/gi, 'Math.E')
                 .replace(/sqrt\(/gi, 'Math.sqrt(')
                 .replace(/abs\(/gi, 'Math.abs(')
                 .replace(/sin\(/gi, 'Math.sin(')
@@ -50,8 +54,7 @@ export const tools = {
                 .replace(/ln\(/gi, 'Math.log(')
                 .replace(/\^/g, '**');
 
-            // Only allow math-safe characters after normalization.
-            if (/[^0-9+\-*/(). ,MathPIEsqrtabinolg]/i.test(sanitized)) {
+            if (/[^0-9+\-*/().,\sMathPIEsqrtabinolg]/i.test(sanitized)) {
                 return { error: 'Expression contains unsupported characters', expression };
             }
 

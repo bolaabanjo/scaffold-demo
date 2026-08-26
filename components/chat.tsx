@@ -2,12 +2,13 @@
 
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
-import { useRef, useEffect, useState, useCallback } from 'react';
+import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { useAccount, useConnect, useChainId } from 'wagmi';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { TierToggle } from './tier-toggle';
 import { WalletButton } from './wallet-button';
 import { usePaySubscription } from '@/lib/payment';
+import { SUBSCRIPTION_PLANS, DEFAULT_PLAN_ID, type SubscriptionPlan } from '@/lib/constants';
 import type { Tier } from '@/cencori.config';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
@@ -46,13 +47,14 @@ export function Chat() {
     const [subscriptionStatus, setSubscriptionStatus] = useState<'none' | 'active' | 'expired'>('none');
     const [subscriptionExpiry, setSubscriptionExpiry] = useState<number | null>(null);
     const [showSubscribePrompt, setShowSubscribePrompt] = useState(false);
+    const [selectedPlanId, setSelectedPlanId] = useState<SubscriptionPlan['id']>(DEFAULT_PLAN_ID);
     const [payStatus, setPayStatus] = useState<'idle' | 'confirming' | 'paying' | 'verifying'>('idle');
     const [isMiniPay, setIsMiniPay] = useState(false);
     const [inputError, setInputError] = useState<string | null>(null);
+    const [now, setNow] = useState(() => Date.now());
 
-    const { messages, sendMessage, status, error } = useChat({
-        transport: new DefaultChatTransport({ api: '/api/chat' }),
-    });
+    const transport = useMemo(() => new DefaultChatTransport({ api: '/api/chat' }), []);
+    const { messages, sendMessage, status, error } = useChat({ transport });
     const scrollRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLTextAreaElement>(null);
     const isLoading = status !== 'ready';
@@ -78,26 +80,36 @@ export function Chat() {
         }
     }, [connect, connectors, isConnected]);
 
-    // Check subscription on connect / address change
-    useEffect(() => {
-        if (isConnected && address) {
-            fetch(`/api/check-subscription?wallet=${address}`)
-                .then((r) => r.json())
-                .then((data) => {
-                    if (data.active) {
-                        setSubscriptionStatus('active');
-                        setSubscriptionExpiry(data.expiresAt);
-                    } else {
-                        setSubscriptionStatus('none');
-                        setSubscriptionExpiry(null);
-                    }
-                })
-                .catch(() => setSubscriptionStatus('none'));
-        } else {
+    const checkSubscription = useCallback(() => {
+        if (!isConnected || !address) {
             setSubscriptionStatus('none');
             setSubscriptionExpiry(null);
+            return;
         }
+        fetch(`/api/check-subscription?wallet=${address}`)
+            .then((r) => r.json())
+            .then((data) => {
+                if (data.active) {
+                    setSubscriptionStatus('active');
+                    setSubscriptionExpiry(data.expiresAt);
+                } else {
+                    setSubscriptionStatus('none');
+                    setSubscriptionExpiry(null);
+                }
+            })
+            .catch(() => setSubscriptionStatus('none'));
     }, [isConnected, address]);
+
+    useEffect(() => {
+        checkSubscription();
+        const interval = setInterval(checkSubscription, 60_000);
+        return () => clearInterval(interval);
+    }, [checkSubscription]);
+
+    useEffect(() => {
+        const interval = setInterval(() => setNow(Date.now()), 60_000);
+        return () => clearInterval(interval);
+    }, []);
 
     useEffect(() => {
         if (scrollRef.current) {
@@ -134,7 +146,7 @@ export function Chat() {
             fetch('/api/subscribe', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ txHash, chainId, walletAddress: address }),
+                body: JSON.stringify({ txHash, chainId, walletAddress: address, planId: selectedPlanId }),
             })
                 .then((r) => r.json())
                 .then((data) => {
@@ -144,14 +156,19 @@ export function Chat() {
                         setShowSubscribePrompt(false);
                         setPayStatus('idle');
                         reset();
+                    } else {
+                        setPayStatus('idle');
+                        setInputError(data.error || 'Payment verification failed. Please try again.');
+                        reset();
                     }
                 })
                 .catch(() => {
                     setPayStatus('idle');
+                    setInputError('Could not verify payment. Please try again.');
                     reset();
                 });
         }
-    }, [isSuccess, txHash, address, chainId, reset]);
+    }, [isSuccess, txHash, address, chainId, selectedPlanId, reset]);
 
     useEffect(() => {
         if (isPending) setPayStatus('paying');
@@ -189,12 +206,8 @@ export function Chat() {
         setInput('');
     }, [tier, isConnected, openConnectModal, isLoading, sendMessage, subscriptionStatus, address]);
 
-    const handleSubscribe = () => {
-        setPayStatus('confirming');
-    };
-
     const handleConfirmPayment = () => {
-        pay();
+        pay(selectedPlan.cost);
     };
 
     const handleCancelPayment = () => {
@@ -225,8 +238,10 @@ export function Chat() {
     };
 
     const daysLeft = subscriptionExpiry
-        ? Math.max(0, Math.floor((subscriptionExpiry * 1000 - Date.now()) / (1000 * 60 * 60 * 24)))
+        ? Math.max(0, Math.floor((subscriptionExpiry * 1000 - now) / (1000 * 60 * 60 * 24)))
         : 0;
+
+    const selectedPlan = SUBSCRIPTION_PLANS.find((p) => p.id === selectedPlanId) ?? SUBSCRIPTION_PLANS[0];
 
     const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -354,15 +369,27 @@ export function Chat() {
                 <div className="subscription-prompt" id="subscribe-prompt">
                     <div className="subscription-prompt-inner">
                         <div className="subscription-prompt-text">
-                            Subscribe to Pro — <strong>3 cUSD / month</strong>
+                            Subscribe to Pro
                             <span className="prompt-sub">Unlimited access to GPT-4o, Claude, and Grok</span>
+                            <div className="plan-picker">
+                                {SUBSCRIPTION_PLANS.map((plan) => (
+                                    <button
+                                        key={plan.id}
+                                        type="button"
+                                        className={`plan-option${plan.id === selectedPlanId ? ' selected' : ''}`}
+                                        onClick={() => setSelectedPlanId(plan.id)}
+                                    >
+                                        {plan.label} — {plan.cost} cUSD / {plan.days}d
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                         <div className="subscription-prompt-actions">
                             <button className="payment-cancel" onClick={handleCancelPayment} type="button">
                                 Cancel
                             </button>
                             <button className="payment-confirm" onClick={handleConfirmPayment} type="button">
-                                Pay 3 cUSD
+                                Pay {selectedPlan.cost} cUSD
                             </button>
                         </div>
                     </div>
@@ -374,7 +401,7 @@ export function Chat() {
                 <div className="subscription-prompt" id="payment-confirm">
                     <div className="subscription-prompt-inner">
                         <div className="subscription-prompt-text">
-                            Confirm <strong>3 cUSD</strong> in your wallet to subscribe
+                            Confirm <strong>{selectedPlan.cost} cUSD</strong> in your wallet to subscribe
                         </div>
                         <div className="subscription-prompt-actions">
                             <button className="payment-cancel" onClick={handleCancelPayment} type="button">
