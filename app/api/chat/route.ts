@@ -71,18 +71,22 @@ export async function POST(req: Request) {
         model,
         system: cencoriConfig.systemPrompt,
         messages: await convertToModelMessages(messages),
-        tools,
-        stopWhen: stepCountIs(5),
-        // Hard guardrail: small models (e.g. llama-8B) ignore the "call once"
-        // prompt and loop on tools without ever answering. After the first step,
-        // disable tool calls so the model MUST produce a text answer from the
-        // tool results it already has.
-        prepareStep: ({ stepNumber }) => {
-            if (stepNumber > 0) {
-                return { toolChoice: 'none' };
-            }
-            return {};
-        },
+        ...(cencoriConfig.tiers[tier].tools
+            ? {
+                  tools,
+                  stopWhen: stepCountIs(5),
+                  // Hard guardrail: small models (e.g. llama-8B) ignore the "call once"
+                  // prompt and loop on tools without ever answering. After the first step,
+                  // disable tool calls so the model MUST produce a text answer from the
+                  // tool results it already has.
+                  prepareStep: ({ stepNumber }) => {
+                      if (stepNumber > 0) {
+                          return { toolChoice: 'none' };
+                      }
+                      return {};
+                  },
+              }
+            : {}),
         temperature: cencoriConfig.temperature,
         maxOutputTokens: cencoriConfig.maxTokens,
         onError({ error }) {
