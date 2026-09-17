@@ -2,11 +2,13 @@ export const cencoriConfig = {
     tiers: {
         standard: {
             label: 'Standard',
-            models: ['nvidia/nemotron-3-ultra-550b-a55b:free'],
+            models: ['groq/compound'],
+            tools: false,
         },
         pro: {
             label: 'Pro',
             models: ['gpt-4o', 'claude-sonnet-4.5', 'grok-4'],
+            tools: true,
         },
     },
 
